@@ -8,7 +8,8 @@
 #include <sstream>
 #include <cstring>
 
-#include "../include/keyboardInput.h"
+// #include "../include/keyboardInput.h"
+#include "event.h"
 
 using namespace std;
 using json = nlohmann::json;
@@ -22,6 +23,17 @@ Event::Event(std::string channel_name, std::string city, std::string name, int d
 
 Event::~Event()
 {
+}
+
+// Member function for splitting a string
+void Event::split_str(const std::string &str, char delimiter, std::vector<std::string> &result) {
+    result.clear(); // Clear the result vector to avoid appending to existing data
+    std::stringstream ss(str); // Use a stringstream to process the string
+    std::string item;
+
+    while (std::getline(ss, item, delimiter)) {
+        result.push_back(item); // Add each substring to the result vector
+    }
 }
 
 void Event::setEventOwnerUser(std::string setEventOwnerUser) {
