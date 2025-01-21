@@ -54,34 +54,34 @@ void StompProtocol::printChannels() const {
     }
 }
 
-// Reports Management
-void StompProtocol::addReport(const std::string& channel, const std::string& user, const std::string& report) {
-    std::lock_guard<std::mutex> lock(reportsMutex);
-    reports[channel][user].push_back(report);
-}
+// // Reports Management
+// void StompProtocol::addReport(const std::string& channel, const std::string& user, const std::string& report) {
+//     std::lock_guard<std::mutex> lock(reportsMutex);
+//     reports[channel][user].push_back(report);
+// }
 
-void StompProtocol::deleteChannel(const std::string& channel) {
-    std::lock_guard<std::mutex> lock(reportsMutex);
-    auto it = reports.find(channel);
-    if (it != reports.end()) {
-        reports.erase(it);
-        std::cout << "Channel \"" << channel << "\" deleted successfully." << std::endl;
-    } else {
-        std::cout << "Channel \"" << channel << "\" does not exist." << std::endl;
-    }
-}
+// void StompProtocol::deleteChannel(const std::string& channel) {
+//     std::lock_guard<std::mutex> lock(reportsMutex);
+//     auto it = reports.find(channel);
+//     if (it != reports.end()) {
+//         reports.erase(it);
+//         std::cout << "Channel \"" << channel << "\" deleted successfully." << std::endl;
+//     } else {
+//         std::cout << "Channel \"" << channel << "\" does not exist." << std::endl;
+//     }
+// }
 
-std::vector<std::string> StompProtocol::getReportsFromUser(const std::string& channel, const std::string& user) const {
-    std::lock_guard<std::mutex> lock(reportsMutex);
-    auto channelIt = reports.find(channel);
-    if (channelIt != reports.end()) {
-        auto userIt = channelIt->second.find(user);
-        if (userIt != channelIt->second.end()) {
-            return userIt->second;
-        }
-    }
-    return {}; // Return an empty vector if no reports are found
-}
+// std::vector<std::string> StompProtocol::getReportsFromUser(const std::string& channel, const std::string& user) const {
+//     std::lock_guard<std::mutex> lock(reportsMutex);
+//     auto channelIt = reports.find(channel);
+//     if (channelIt != reports.end()) {
+//         auto userIt = channelIt->second.find(user);
+//         if (userIt != channelIt->second.end()) {
+//             return userIt->second;
+//         }
+//     }
+//     return {}; // Return an empty vector if no reports are found
+// }
 
 
 
