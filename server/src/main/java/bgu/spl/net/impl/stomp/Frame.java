@@ -15,6 +15,9 @@ public class Frame {
     }
 
     // Getters
+    public String getHeader(String key) {
+        return headers.get(key);
+    }
     public String getCommand() {
         return command;
     }
@@ -89,14 +92,17 @@ public class Frame {
     // For debugging purposes
     @Override
     public String toString() {
-        return "StompFrame{" +
-                "command='" + command + '\'' +
-                ", headers=" + headers +
-                ", body='" + body + '\'' +
-                '}';
+        return "---------\n" +
+                 command + "\n" +
+                 headers + "\n" +
+                 body + "\n -------- \n"
+                ;
     }
 
     public void addHeader(String string, String string2) {
         headers.put(string, string2);
+    }
+    public void setBody(String body) {
+        this.body = body;
     }
 }

@@ -46,10 +46,43 @@ public class BlockingConnectionHandler<T> implements Runnable, ConnectionHandler
     }
 
     @Override
-    public void close() throws IOException {
-        connected = false;
-        sock.close();
+public void close() throws IOException {
+    System.out.println("i reach the clossssssse");
+
+    // Mark connection as not connected
+    connected = false;
+
+    // Process all remaining messages in the input stream
+    try {
+        int read;
+        while (in != null && (read = in.read()) >= 0) {
+            T nextMessage = encdec.decodeNextByte((byte) read);
+            if (nextMessage != null) {
+                protocol.process(nextMessage); // Ensure remaining messages are processed
+            }
+        }
+    } catch (IOException e) {
+        System.err.println("Error processing remaining messages: " + e.getMessage());
     }
+
+    // Close the socket to release resources
+    try {
+        if (sock != null) {
+            sock.close();
+            System.out.println("Socket closed successfully.");
+        }
+    } catch (IOException e) {
+        System.err.println("Error closing socket: " + e.getMessage());
+    }
+}
+
+
+    // @Override
+    // public void close() throws IOException {
+    //     System.out.println("i reach the clossssssse");
+    //     connected = false;
+    //     sock.close();
+    // }
 
     @Override
     public void send(T msg) {

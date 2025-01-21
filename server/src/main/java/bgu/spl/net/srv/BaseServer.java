@@ -7,6 +7,7 @@ import bgu.spl.net.impl.stomp.ConnectionsImpl;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 
 public abstract class BaseServer<T> implements Server<T> {
@@ -16,7 +17,7 @@ public abstract class BaseServer<T> implements Server<T> {
     private final Supplier<MessageEncoderDecoder<T>> encdecFactory;
     private ServerSocket sock;
     private final Connections<T> connections; // Shared Connections instance
-    private int counterConectionId; 
+    private final AtomicInteger counterConectionId; 
 
     public BaseServer(
             int port,
@@ -27,7 +28,7 @@ public abstract class BaseServer<T> implements Server<T> {
         this.protocolFactory = protocolFactory;
         this.encdecFactory = encdecFactory;
         this.connections = new ConnectionsImpl<>(); // Initialize Connections
-        this.counterConectionId=0;
+        this.counterConectionId = new AtomicInteger(0);
 		this.sock = null;
     }
 
@@ -49,14 +50,23 @@ public abstract class BaseServer<T> implements Server<T> {
                         encdecFactory.get(),
                         protocolFactory.get(),getAndIncrementCounterConnectionId(),connections );
                 // Add the new connection to the Connections map
-                ((ConnectionsImpl<T>) connections).addConnection(counterConectionId, handler);
+                ((ConnectionsImpl<T>) connections).addConnection(counterConectionId.get(), handler);
 
                 execute(handler);
                 
             }
             
         } catch (IOException ex) {
+            //יותר נכון לשלוח אאור פריים
+            // sendErrorAndClose("Error: " + e.getMessage(), protocol.getConnectionId(), protocol.getConnections());
         }
+    // } finally {
+    //     try {
+    //         close(); // Ensure proper cleanup
+    //     } catch (IOException e) {
+    //         e.printStackTrace();
+    //     }
+    // }
 
         System.out.println("server closed!!!");
     }
@@ -68,8 +78,7 @@ public abstract class BaseServer<T> implements Server<T> {
     }
 
     private int getAndIncrementCounterConnectionId(){
-        this.counterConectionId +=1;
-        return counterConectionId;
+        return counterConectionId.incrementAndGet();
     }
 
     protected abstract void execute(BlockingConnectionHandler<T>  handler);

@@ -54,34 +54,46 @@ void StompProtocol::printChannels() const {
     }
 }
 
-// // Reports Management
-// void StompProtocol::addReport(const std::string& channel, const std::string& user, const std::string& report) {
-//     std::lock_guard<std::mutex> lock(reportsMutex);
-//     reports[channel][user].push_back(report);
-// }
+std::vector<std::string> StompProtocol::split(const std::string& str, char delimiter) const {
+    std::vector<std::string> tokens;
+    std::istringstream stream(str);
+    std::string token;
+    while (std::getline(stream, token, delimiter)) {
+        if (!token.empty()) {
+            tokens.push_back(token);
+        }
+    }
+    return tokens;
+}
 
-// void StompProtocol::deleteChannel(const std::string& channel) {
-//     std::lock_guard<std::mutex> lock(reportsMutex);
-//     auto it = reports.find(channel);
-//     if (it != reports.end()) {
-//         reports.erase(it);
-//         std::cout << "Channel \"" << channel << "\" deleted successfully." << std::endl;
-//     } else {
-//         std::cout << "Channel \"" << channel << "\" does not exist." << std::endl;
-//     }
-// }
+// Reports Management
+void StompProtocol::addReport(const std::string& channel, const std::string& user, const std::string& report) {
+    std::lock_guard<std::mutex> lock(reportsMutex);
+    reports[channel][user].push_back(report);
+}
 
-// std::vector<std::string> StompProtocol::getReportsFromUser(const std::string& channel, const std::string& user) const {
-//     std::lock_guard<std::mutex> lock(reportsMutex);
-//     auto channelIt = reports.find(channel);
-//     if (channelIt != reports.end()) {
-//         auto userIt = channelIt->second.find(user);
-//         if (userIt != channelIt->second.end()) {
-//             return userIt->second;
-//         }
-//     }
-//     return {}; // Return an empty vector if no reports are found
-// }
+void StompProtocol::deleteChannel(const std::string& channel) {
+    std::lock_guard<std::mutex> lock(reportsMutex);
+    auto it = reports.find(channel);
+    if (it != reports.end()) {
+        reports.erase(it);
+        std::cout << "Channel \"" << channel << "\" deleted successfully." << std::endl;
+    } else {
+        std::cout << "Channel \"" << channel << "\" does not exist." << std::endl;
+    }
+}
+
+std::vector<std::string> StompProtocol::getReportsFromUser(const std::string& channel, const std::string& user) const {
+    std::lock_guard<std::mutex> lock(reportsMutex);
+    auto channelIt = reports.find(channel);
+    if (channelIt != reports.end()) {
+        auto userIt = channelIt->second.find(user);
+        if (userIt != channelIt->second.end()) {
+            return userIt->second;
+        }
+    }
+    return {}; // Return an empty vector if no reports are found
+}
 
 
 
