@@ -13,19 +13,22 @@ import bgu.spl.net.srv.Connections;
 public class ConnectionsImpl<T> implements Connections<T> {
 
     private final ConcurrentHashMap<Integer, ConnectionHandler<T>> connectionHandlers; // Maps connectionId to handlers
-    //אני צריכה למחוק את הטבלה הזאת 
-    private final ConcurrentHashMap<String, ConcurrentHashMap<Integer, ConnectionHandler<T>>> channels; // Maps channel names to subscribers    
     private final ConcurrentHashMap<String, Integer> MapClientsNameAndId;
+    private final ConcurrentHashMap<Integer, String> helperMapClientsNameAndId; 
     private final ConcurrentHashMap<String, ConcurrentHashMap<Integer,String>> topics; 
+    //<String channelName, Map<int connectionId, String subscriptionId>> 
     private final ConcurrentHashMap<String, String> mapAllUsers;
+    private final ConcurrentHashMap<Integer, ConcurrentHashMap<String,String>> helperTopics; 
+    //<int connectionID, Map<String subscriptionId, String channelName>
     private AtomicInteger counterMassageId; 
 
     public ConnectionsImpl() {
         this.connectionHandlers = new ConcurrentHashMap<>();
-        this.channels = new ConcurrentHashMap<>();
         this.MapClientsNameAndId=new ConcurrentHashMap<>();
         this.topics=new ConcurrentHashMap<>();
         this.mapAllUsers = new ConcurrentHashMap<>();
+        this.helperTopics = new ConcurrentHashMap<>();
+        this.helperMapClientsNameAndId=new ConcurrentHashMap<>();
         this.counterMassageId = new AtomicInteger(0); 
     }
 
@@ -41,25 +44,42 @@ public class ConnectionsImpl<T> implements Connections<T> {
 
     @Override
     public void send(String channel, T msg) {
-        // Broadcast the message to all subscribers of the channel
-        ConcurrentHashMap<Integer, ConnectionHandler<T>> subscribers = channels.get(channel);
+        ConcurrentHashMap<Integer, String> subscribers = topics.get(channel);
+        System.out.println(subscribers.size());
+        if (msg instanceof Frame) {
+            System.out.println("Dafna this is the message you broadcast:" + msg.toString());
+        }
+        ConnectionHandler<T> client; 
         if (subscribers != null) {
-            for (ConnectionHandler<T> handler : subscribers.values()) {
-                handler.send(msg);
+            for (Integer connectionId : subscribers.keySet()) {
+                client = connectionHandlers.get(connectionId);
+                client.send(msg); 
             }
         }
     }
 
     @Override
     public void disconnect(int connectionId) {
-        // אני צריכה למחוק אותו מכל הטבלאות 
-        ConnectionHandler<T> handler = connectionHandlers.remove(connectionId);
-        for (Map.Entry<String, Integer> entry : MapClientsNameAndId.entrySet()) {
-            if (entry.getValue().equals(connectionId)) {
-                MapClientsNameAndId.remove(entry.getKey()); 
-            }
+        //Removing from server data: 
+       
+        ConcurrentHashMap<String, String> allSubscriptions = helperTopics.get(connectionId);
+        if (allSubscriptions != null) {
+            // Iterate over all topics the connection is subscribed to
+            for (String subscribtionId : allSubscriptions.keySet()) {
+                String channelName = allSubscriptions.get(subscribtionId); 
+                topics.get(channelName).remove(connectionId);
+                }
+         helperTopics.remove(connectionId);
         }
+        System.out.println("--helperTopic map after dissconnet--\n" + topics.toString());
+        System.out.println("--topices map after dissconnest--\n" + helperTopics.toString());
 
+      String userName = helperMapClientsNameAndId.get(connectionId);
+      helperMapClientsNameAndId.remove(connectionId);
+      MapClientsNameAndId.remove(userName);
+      System.out.println("--helperMapClientsNameAndId map after dissconnest--\n" + helperTopics.toString());
+      System.out.println("--MapClientsNameAndId map after dissconnest--\n" + helperTopics.toString());
+        ConnectionHandler<T> handler = connectionHandlers.remove(connectionId);
         if (handler != null) {
             System.out.println("i reach her handler!=null");
             try {
@@ -68,11 +88,6 @@ public class ConnectionsImpl<T> implements Connections<T> {
                 e.printStackTrace();
             }
         }
-
-        // // Remove the connectionId from all subscribed channels
-        // for (Map<Integer, ConnectionHandler<T>> subscribers : channels.values()) {
-        //     subscribers.remove(connectionId);
-        // }
     }
 
     /**
@@ -91,10 +106,6 @@ public class ConnectionsImpl<T> implements Connections<T> {
      * @param connectionId the connection ID
      * @param channel the channel name
      */
-    public void subscribe(int connectionId, String channel) {
-        channels.computeIfAbsent(channel, k -> new ConcurrentHashMap<>())
-                .put(connectionId, connectionHandlers.get(connectionId));
-    }
 
     /**
      * Unsubscribes a connection from a channel.
@@ -102,27 +113,47 @@ public class ConnectionsImpl<T> implements Connections<T> {
      * @param connectionId the connection ID
      * @param channel the channel name
      */
-    public void unsubscribe(int connectionId, String channel) {
-        Map<Integer, ConnectionHandler<T>> subscribers = channels.get(channel);
-        if (subscribers != null) {
-            subscribers.remove(connectionId);
-        }
-    }
 
-    public boolean isClientSubscribeToTheChannel (String channelName, int connectionId){
-       return (topics.get(channelName).get(connectionId)!=null);
-    }
+
    
     public void addSubscription (String channelName, String subscriptionId, int connectionId){
-        // if (topics.get(channelName)==null){
-        //     topics.put(channelName, new ConcurrentHashMap<>());
-        //     topics.get(channelName).put(connectionId, subscriptionId);
-        // }
-        // else {
-        //     topics.get(channelName).put(connectionId, subscriptionId);
-        // }
+       // Check if the topic already exists
+       if (topics.get(channelName)==null){
+        topics.computeIfAbsent(channelName, key -> new ConcurrentHashMap<>());
+        topics.get(channelName).put(connectionId, subscriptionId);
+        if (helperTopics.get(connectionId)==null){
+            helperTopics.put(connectionId,new ConcurrentHashMap<>());
+            helperTopics.get(connectionId).put(subscriptionId, channelName);
+        }
+        else {
+            helperTopics.get(connectionId).put(subscriptionId, channelName);
+        }
+       }
+       else {
+        //The client take care is the client already subscribed
+        topics.get(channelName).put(connectionId, subscriptionId);
+        if (helperMapClientsNameAndId.get(connectionId)==null){
+            helperTopics.put(connectionId,new ConcurrentHashMap<>());
+            helperTopics.get(connectionId).put(subscriptionId, channelName);
+        }
+        else {
+            helperTopics.get(connectionId).put(subscriptionId, channelName);
+        }
+       }
+        System.out.println("--Topics map--\n" + topics.toString());
+        System.out.println("--helperTopics map--\n" + helperTopics.toString());
     }
 
+    public void removeSubscription(int coneectionId, String subscriptionId) {
+        if (helperTopics.get(coneectionId)!=null){
+            String channelName= helperTopics.get(coneectionId).get(subscriptionId);
+            helperTopics.get(coneectionId).remove(subscriptionId);
+            topics.get(channelName).remove(coneectionId);
+        }
+        System.out.println("--Topics map after unsubscribe--\n" + topics.toString());
+        System.out.println("--helperTopics map after unsubscribe--\n" + helperTopics.toString());
+    }
+    
     public boolean isUserExists(String userName) {
         return mapAllUsers.containsKey(userName);
     }
@@ -135,10 +166,35 @@ public class ConnectionsImpl<T> implements Connections<T> {
 
     public void addClientToMapClientsNameAndId(String userName, int connectionId){
         this.MapClientsNameAndId.put(userName,connectionId);
+        this.helperMapClientsNameAndId.put(connectionId,userName);
+        System.out.println("--MapClientsNameAndId. map after unsubscribe--\n" + helperTopics.toString());
+        System.out.println("--helperMapClientsNameAndId. map after unsubscribe--\n" + helperTopics.toString());
     }
     public void addClientToMapAllUsers(String userName, String passward){
         this.mapAllUsers.put(userName, passward);
+        System.out.println("--addClientToMapAllUsers. map after unsubscribe--\n" + helperTopics.toString());
     }
 
+    //Getters: 
+    public ConcurrentHashMap<Integer, ConnectionHandler<T>> getConnectionHandlers() {
+        return connectionHandlers;
+    }
+
+
+    public ConcurrentHashMap<String, Integer> getMapClientsNameAndId() {
+        return MapClientsNameAndId;
+    }
+
+    public ConcurrentHashMap<String, ConcurrentHashMap<Integer, String>> getTopics() {
+        return topics;
+    }
+
+    public ConcurrentHashMap<String, String> getMapAllUsers() {
+        return mapAllUsers;
+    }
+
+    public AtomicInteger getCounterMassageId() {
+        return counterMassageId;
+    }
 
 }

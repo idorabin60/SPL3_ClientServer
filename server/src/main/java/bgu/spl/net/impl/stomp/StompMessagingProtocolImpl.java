@@ -1,4 +1,6 @@
 package bgu.spl.net.impl.stomp;
+import java.util.concurrent.ConcurrentHashMap;
+
 import bgu.spl.net.api.StompMessagingProtocol;
 import bgu.spl.net.srv.Connections;
 
@@ -21,33 +23,75 @@ public class StompMessagingProtocolImpl implements StompMessagingProtocol<Frame>
 
     @Override
     public void process(Frame frame) {
+        System.out.println("----Dafna that the frame you recive from the client:----- " + frame.toString());
         if (frame.getCommand().equalsIgnoreCase("CONNECT")) {
             handleConnectFrame(frame);
            }
            else if (frame.getCommand().equalsIgnoreCase("DISCONNECT")) {
-            System.out.println("I RECIVE THE FRAME");
             handleDisconnectFrame(frame);
            }
            else if (frame.getCommand().equalsIgnoreCase("SUBSCRIBE")) {
             handleSubscribeFrame(frame);
            }
+           else if (frame.getCommand().equalsIgnoreCase("UNSUBSCRIBE")){
+            handleUnSubscribeFrame(frame);
+           }
+           else if (frame.getCommand().equalsIgnoreCase("SEND")){
+            handleSendFrame(frame);
+           }
+           
          else {
             System.out.println("Unknown command: " + frame.getCommand());
         }
     }
 
+    private void handleUnSubscribeFrame(Frame frame){
+        String subscribtionId = frame.getHeader("id");
+        connections.removeSubscription(connectionId,subscribtionId);
+        sendReceiptFrameIfNeeded(frame);
+    }
+        
+
     private void handleSubscribeFrame(Frame frame){
         String channelName = frame.getHeader("destination");
         String subscribtionId = frame.getHeader("id");
-        sendReceiptFrameIfNeeded(frame);
-        // if (connections.isClientSubscribeToTheChannel(channelName, connectionId)){
-        //     sendReceiptFrameIfNeeded(frame);
-        // }
-        // else {
-        //     connections.addSubscription(channelName, subscribtionId, connectionId);
-        //     sendReceiptFrameIfNeeded(frame);
-        // }
+        //Test 1: check if the it formed frame 
+        if (channelName==null ||subscribtionId==null){
+            sendErrorAndClose(frame, "malformed frame received");
+        }
+        else {
+            connections.addSubscription(channelName, subscribtionId, connectionId);
+            sendReceiptFrameIfNeeded(frame);
+        }
     }
+
+    private void handleSendFrame (Frame frame){
+        //Tests:
+        //Test 1: check if the frame is in the format
+        if (frame.getHeader("destination") ==null){
+            sendErrorAndClose(frame, "malformed frame received");
+        }
+        //Test 2: check if the sender is subscribed to the channnel
+        else {
+            String channelName = frame.getHeader("destination");
+            if (channelName.charAt(0) == '/') {
+                channelName = channelName.substring(1); // Remove the first character
+            }
+            // System.out.println("DAFNA2:" + channelName);
+            if (connections.getTopics().get(channelName)==null){
+                sendErrorAndClose(frame, "No channel like this.");
+            }
+            else if (connections.getTopics().get(channelName).get(connectionId)==null){
+                    sendErrorAndClose(frame, "The user is not subscribe to the chennel");
+                }
+            else {   //Pass all the tests
+                System.out.println("Dafna you reach here (: )");
+                    connections.send(channelName, frame);
+                    sendReceiptFrameIfNeeded(frame); 
+                }
+            }    
+        }
+
 
     private void handleDisconnectFrame (Frame frame){
         sendReceiptFrameIfNeeded(frame);
