@@ -30,6 +30,7 @@ public:
     void deleteSubscriptionChannel(int id);
     std::string getChannelById(int id) const;
     int getSubscriptionIDByName(const std::string& channelName);
+    std::vector<std::string> split(const std::string& str, char delimiter) const;
 
     // Reports Management
     void addReport(const std::string& channel, const std::string& user, const std::string& report);

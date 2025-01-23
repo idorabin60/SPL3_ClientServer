@@ -1,4 +1,5 @@
 #include "summaryReport.h"
+#include <filesystem>
 
 // Constructor
 summaryReport::summaryReport(const std::string& channelName)
@@ -78,3 +79,4 @@ void summaryReport::printSummary() const {
         reportNumber++;
     }
 }
+

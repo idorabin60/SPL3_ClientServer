@@ -54,6 +54,18 @@ void StompProtocol::printChannels() const {
     }
 }
 
+std::vector<std::string> StompProtocol::split(const std::string& str, char delimiter) const {
+    std::vector<std::string> tokens;
+    std::istringstream stream(str);
+    std::string token;
+    while (std::getline(stream, token, delimiter)) {
+        if (!token.empty()) {
+            tokens.push_back(token);
+        }
+    }
+    return tokens;
+}
+
 // Reports Management
 void StompProtocol::addReport(const std::string& channel, const std::string& user, const std::string& report) {
     std::lock_guard<std::mutex> lock(reportsMutex);
