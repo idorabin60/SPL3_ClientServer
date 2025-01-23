@@ -23,12 +23,12 @@ public class StompServer {
             ).serve();
         } else if (serverType.equalsIgnoreCase("reactor")) {
             // Reactor Server
-            // Server.reactor(
-            //     Runtime.getRuntime().availableProcessors(), // Number of threads
-            //     port,
-            //     StompMessagingProtocolImpl::new, // Protocol factory
-            //     MessageEncoderDecoderImpl::new // Encoder/Decoder factory
-            // ).serve();
+            Server.reactor(
+                Runtime.getRuntime().availableProcessors(), // Number of threads
+                port,
+                StompMessagingProtocolImpl::new, // Protocol factory
+                MessageEncoderDecoderImpl::new // Encoder/Decoder factory
+            ).serve();
         } else {
             System.err.println("Invalid server type. Use 'reactor' or 'tpc'.");
         }

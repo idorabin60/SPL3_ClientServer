@@ -69,16 +69,19 @@ public class ConnectionsImpl<T> implements Connections<T> {
                 String channelName = allSubscriptions.get(subscribtionId); 
                 topics.get(channelName).remove(connectionId);
                 }
-         helperTopics.remove(connectionId);
+         helperTopics.remove(connectionId).clear();;
         }
         System.out.println("--helperTopic map after dissconnet--\n" + topics.toString());
         System.out.println("--topices map after dissconnest--\n" + helperTopics.toString());
 
       String userName = helperMapClientsNameAndId.get(connectionId);
+      if (userName!=null){
       helperMapClientsNameAndId.remove(connectionId);
       MapClientsNameAndId.remove(userName);
-      System.out.println("--helperMapClientsNameAndId map after dissconnest--\n" + helperTopics.toString());
-      System.out.println("--MapClientsNameAndId map after dissconnest--\n" + helperTopics.toString());
+      }
+      System.out.println("--helperMapClientsNameAndId map after dissconnest--\n" + helperMapClientsNameAndId.toString());
+      System.out.println("--MapClientsNameAndId map after dissconnest--\n" + MapClientsNameAndId.toString());
+      System.out.println("--MapAllUsers map after dissconnest--\n" + mapAllUsers.toString());
         ConnectionHandler<T> handler = connectionHandlers.remove(connectionId);
         if (handler != null) {
             System.out.println("i reach her handler!=null");
@@ -120,15 +123,15 @@ public class ConnectionsImpl<T> implements Connections<T> {
        // Check if the topic already exists
        if (topics.get(channelName)==null){
         topics.computeIfAbsent(channelName, key -> new ConcurrentHashMap<>());
-        topics.get(channelName).put(connectionId, subscriptionId);
+       }
+       if (topics.get(channelName).get(connectionId)==null){
+        System.out.println("yes is null");
+       topics.get(channelName).put(connectionId, subscriptionId);
+       }
         if (helperTopics.get(connectionId)==null){
             helperTopics.put(connectionId,new ConcurrentHashMap<>());
             helperTopics.get(connectionId).put(subscriptionId, channelName);
         }
-        else {
-            helperTopics.get(connectionId).put(subscriptionId, channelName);
-        }
-       }
        else {
         //The client take care is the client already subscribed
         topics.get(channelName).put(connectionId, subscriptionId);
@@ -187,6 +190,10 @@ public class ConnectionsImpl<T> implements Connections<T> {
 
     public ConcurrentHashMap<String, ConcurrentHashMap<Integer, String>> getTopics() {
         return topics;
+    }
+
+    public ConcurrentHashMap<Integer, ConcurrentHashMap<String,String>> getHeplperTopics() {
+        return helperTopics;
     }
 
     public ConcurrentHashMap<String, String> getMapAllUsers() {

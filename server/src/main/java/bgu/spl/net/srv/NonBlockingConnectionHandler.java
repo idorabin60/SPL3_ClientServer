@@ -27,11 +27,13 @@ public class NonBlockingConnectionHandler<T> implements ConnectionHandler<T> {
             MessageEncoderDecoder<T> reader,
             StompMessagingProtocol<T> protocol,
             SocketChannel chan,
-            Reactor reactor) {
+            Reactor<T> reactor, int connectionId, Connections<T> connections) {
         this.chan = chan;
         this.encdec = reader;
         this.protocol = protocol;
         this.reactor = reactor;
+        this.protocol.start(connectionId, connections); // Initialize the protocol with connection-specific data
+
     }
 
     public Runnable continueRead() {
@@ -52,10 +54,6 @@ public class NonBlockingConnectionHandler<T> implements ConnectionHandler<T> {
                         T nextMessage = encdec.decodeNextByte(buf.get());
                         if (nextMessage != null) {
                             protocol.process(nextMessage);
-                            //  if (response != null) {
-                            //     writeQueue.add(ByteBuffer.wrap(encdec.encode(response)));
-                            //     reactor.updateInterestedOps(chan, SelectionKey.OP_READ | SelectionKey.OP_WRITE);
-                            //  }
                         }
                     }
                 } finally {
@@ -120,6 +118,23 @@ public class NonBlockingConnectionHandler<T> implements ConnectionHandler<T> {
 
     @Override
     public void send(T msg) {
-        //IMPLEMENT IF NEEDED
+        if (msg == null) {
+            return; // Avoid null messages
+        }
+    
+        try {
+            // Encode the message into bytes
+            ByteBuffer encodedMessage = ByteBuffer.wrap(encdec.encode(msg));
+    
+            // Add the encoded message to the write queue
+            writeQueue.add(encodedMessage);
+    
+            // Notify the reactor to enable WRITE operations
+            reactor.updateInterestedOps(chan, SelectionKey.OP_READ | SelectionKey.OP_WRITE);
+        } catch (Exception e) {
+            e.printStackTrace();
+            close(); // Close the connection in case of an error
+        }
     }
+    
 }

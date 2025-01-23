@@ -96,7 +96,7 @@ public class StompMessagingProtocolImpl implements StompMessagingProtocol<Frame>
                 System.out.println("Dafna you reach here (: )");
                 connections.send(channelName, messageFrame);
                 sendReceiptFrameIfNeeded(frame); 
-                }
+                }       
             }    
         }
 
@@ -117,7 +117,8 @@ public class StompMessagingProtocolImpl implements StompMessagingProtocol<Frame>
                 sendErrorAndClose(frame, "User is already logged in.");
             }
             else { 
-                if (passward!=connections.getPassward(userName)){
+                System.out.println("Dafna you receach here:" + passward + " the pass in the map:" +connections.getPassward(userName));
+                if (!passward.equals(connections.getPassward(userName))){
                     loginTestsSucced=false; 
                    sendErrorAndClose(frame, "Wrong password.");
                 }
@@ -138,6 +139,8 @@ public class StompMessagingProtocolImpl implements StompMessagingProtocol<Frame>
                         System.out.println("ERROR: network disconnection");
                        }
                     }
+    System.out.println("topics after login:" +connections.getTopics().toString());
+    System.out.println("helperTopice after login:" +connections.getHeplperTopics().toString());
 
     }
     @Override
@@ -152,6 +155,7 @@ public class StompMessagingProtocolImpl implements StompMessagingProtocol<Frame>
         if (!connections.send(connectionId, errorFrame)){
             System.out.println("ERROR????????????");
            }
+        sendReceiptFrameIfNeeded(errorFrame);
         gracefulShoutDown();
     }
 
@@ -164,7 +168,7 @@ public class StompMessagingProtocolImpl implements StompMessagingProtocol<Frame>
         String receiptId= frame.getHeader("receipt");
         if (receiptId!=null){
             Frame receiptFrame = new Frame("RECEIPT", null, null);
-            receiptFrame.addHeader("receipt-id ", receiptId);
+            receiptFrame.addHeader("receipt-id", receiptId);
             if (!connections.send(connectionId, receiptFrame)){
                 System.out.println("ERROR: network disconnection");
                }

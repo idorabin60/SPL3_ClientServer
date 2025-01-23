@@ -3,6 +3,7 @@ package bgu.spl.net.srv;
 import bgu.spl.net.api.MessageEncoderDecoder;
 import bgu.spl.net.api.MessagingProtocol;
 import bgu.spl.net.api.StompMessagingProtocol;
+import bgu.spl.net.impl.stomp.ConnectionsImpl;
 import bgu.spl.net.impl.stomp.Frame;
 
 import java.io.IOException;
@@ -13,6 +14,7 @@ import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 
 public class Reactor<T> implements Server<T> {
@@ -22,9 +24,12 @@ public class Reactor<T> implements Server<T> {
     private final Supplier<MessageEncoderDecoder<T>> readerFactory;
     private final ActorThreadPool pool;
     private Selector selector;
-
     private Thread selectorThread;
     private final ConcurrentLinkedQueue<Runnable> selectorTasks = new ConcurrentLinkedQueue<>();
+    
+    //A fields we add:
+    private final Connections<T> connections; // Shared Connections instance
+    private final AtomicInteger counterConectionId; 
 
     public Reactor(
             int numThreads,
@@ -36,21 +41,21 @@ public class Reactor<T> implements Server<T> {
         this.port = port;
         this.protocolFactory = protocolFactory2;
         this.readerFactory = readerFactory;
+        this.connections = new ConnectionsImpl<>(); // Initialize Connections
+        this.counterConectionId = new AtomicInteger(0);
     }
 
     @Override
     public void serve() {
 	selectorThread = Thread.currentThread();
         try (Selector selector = Selector.open();
-                ServerSocketChannel serverSock = ServerSocketChannel.open()) {
-
+            ServerSocketChannel serverSock = ServerSocketChannel.open()) {
             this.selector = selector; //just to be able to close
 
             serverSock.bind(new InetSocketAddress(port));
             serverSock.configureBlocking(false);
             serverSock.register(selector, SelectionKey.OP_ACCEPT);
 			System.out.println("Server started");
-
             while (!Thread.currentThread().isInterrupted()) {
 
                 selector.select();
@@ -102,7 +107,8 @@ public class Reactor<T> implements Server<T> {
                 readerFactory.get(),
                 protocolFactory.get(),
                 clientChan,
-                this);
+                this,getAndIncrementCounterConnectionId(),this.connections);
+        ((ConnectionsImpl<T>) connections).addConnection(counterConectionId.get(), handler);
         clientChan.register(selector, SelectionKey.OP_READ, handler);
     }
 
@@ -131,6 +137,10 @@ public class Reactor<T> implements Server<T> {
     @Override
     public void close() throws IOException {
         selector.close();
+    }
+
+    private int getAndIncrementCounterConnectionId(){
+        return counterConectionId.incrementAndGet();
     }
 
 }
