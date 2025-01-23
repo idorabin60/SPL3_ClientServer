@@ -111,6 +111,7 @@ public class Reactor<T> implements Server<T> {
         ((ConnectionsImpl<T>) connections).addConnection(counterConectionId.get(), handler);
         clientChan.register(selector, SelectionKey.OP_READ, handler);
     }
+    //just a dummy comment for dafana :) 
 
     private void handleReadWrite(SelectionKey key) {
         @SuppressWarnings("unchecked")
