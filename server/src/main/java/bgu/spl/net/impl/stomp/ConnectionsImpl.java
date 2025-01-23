@@ -167,12 +167,12 @@ public class ConnectionsImpl<T> implements Connections<T> {
     public void addClientToMapClientsNameAndId(String userName, int connectionId){
         this.MapClientsNameAndId.put(userName,connectionId);
         this.helperMapClientsNameAndId.put(connectionId,userName);
-        System.out.println("--MapClientsNameAndId. map after unsubscribe--\n" + helperTopics.toString());
-        System.out.println("--helperMapClientsNameAndId. map after unsubscribe--\n" + helperTopics.toString());
+        System.out.println("--MapClientsNameAndId. map after login--\n" + MapClientsNameAndId.toString());
+        System.out.println("--helperMapClientsNameAndId. map after login--\n" + helperMapClientsNameAndId.toString());
     }
     public void addClientToMapAllUsers(String userName, String passward){
         this.mapAllUsers.put(userName, passward);
-        System.out.println("--addClientToMapAllUsers. map after unsubscribe--\n" + helperTopics.toString());
+        System.out.println("--addClientToMapAllUsers. map after login--\n" + mapAllUsers.toString());
     }
 
     //Getters: 
@@ -193,8 +193,12 @@ public class ConnectionsImpl<T> implements Connections<T> {
         return mapAllUsers;
     }
 
-    public AtomicInteger getCounterMassageId() {
-        return counterMassageId;
+    public int getCounterMassageId() {
+        return counterMassageId.get();
+    }
+
+    public int getAndIncreceMessageId(){
+        return counterMassageId.incrementAndGet();   
     }
 
 }

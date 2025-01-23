@@ -74,6 +74,7 @@ public class StompMessagingProtocolImpl implements StompMessagingProtocol<Frame>
         //Test 2: check if the sender is subscribed to the channnel
         else {
             String channelName = frame.getHeader("destination");
+            String channelNameOrigin = frame.getHeader("destination");
             if (channelName.charAt(0) == '/') {
                 channelName = channelName.substring(1); // Remove the first character
             }
@@ -85,9 +86,16 @@ public class StompMessagingProtocolImpl implements StompMessagingProtocol<Frame>
                     sendErrorAndClose(frame, "The user is not subscribe to the chennel");
                 }
             else {   //Pass all the tests
+                Frame messageFrame = new Frame("MESSAGE", null,null);
+                String subscriptionId= connections.getTopics().get(channelName).get(connectionId);
+                messageFrame.addHeader("subscription", subscriptionId);
+                String messageId = connections.getAndIncreceMessageId() +"";
+                messageFrame.addHeader("message-id",messageId);
+                messageFrame.addHeader("destination", channelNameOrigin);
+                messageFrame.setBody(frame.getBody());
                 System.out.println("Dafna you reach here (: )");
-                    connections.send(channelName, frame);
-                    sendReceiptFrameIfNeeded(frame); 
+                connections.send(channelName, messageFrame);
+                sendReceiptFrameIfNeeded(frame); 
                 }
             }    
         }
