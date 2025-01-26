@@ -47,8 +47,17 @@ public class StompMessagingProtocolImpl implements StompMessagingProtocol<Frame>
 
     private void handleUnSubscribeFrame(Frame frame){
         String subscribtionId = frame.getHeader("id");
-        connections.removeSubscription(connectionId,subscribtionId);
-        sendReceiptFrameIfNeeded(frame);
+        if (connections.getHeplperTopics().get(connectionId)==null){
+            sendErrorAndClose(frame, "the client not subscribe to the channel.");
+        }
+        else if (connections.getHeplperTopics().get(connectionId).get(subscribtionId)==null) {
+            sendErrorAndClose(frame, "the client not subscribe to the channel.");
+        }
+        else {
+            connections.removeSubscription(connectionId,subscribtionId);
+            sendReceiptFrameIfNeeded(frame);
+        }
+      
     }
         
 
